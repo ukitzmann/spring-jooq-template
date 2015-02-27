@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+       <context:property-placeholder location="classpath:application.properties"/>
+
+       <mvc:annotation-driven/>
+       <context:component-scan base-package="de.evas.sample.controller"/>
+
+       <bean id="dataSource" class="com.zaxxer.hikari.HikariDataSource">
+              <property name="poolName" value="default"/>
+              <property name="dataSourceClassName" value="com.mysql.jdbc.jdbc2.optional.MysqlDataSource"/>
+              <property name="username" value="${db.username}"/>
+              <property name="password" value="${db.password}"/>
+       </bean>
+
+       <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+              <property name="dataSource" ref="dataSource"/>
+       </bean>
+
+       <bean id="transactionAwareDataSource" class="org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy">
+              <constructor-arg ref="dataSource"/>
+       </bean>
+
+       <bean id="connectionProvider" class="org.jooq.impl.DataSourceConnectionProvider">
+              <constructor-arg ref="transactionAwareDataSource"/>
+       </bean>
+
+       <bean id="dsl" class="org.jooq.impl.DefaultDSLContext">
+              <constructor-arg ref="config"/>
+       </bean>
+
+       <bean id="transactionProvider" class="de.evas.sample.jooq.SpringTransactionProvider"/>
+
+       <bean id="exceptionTranslator" class="de.evas.sample.jooq.exception.SpringExceptionTranslator"/>
+
+       <bean id="config" class="org.jooq.impl.DefaultConfiguration">
+              <property name="SQLDialect" value="MYSQL"/>
+              <property name="connectionProvider" ref="connectionProvider"/>
+              <property name="transactionProvider" ref="transactionProvider"/>
+              <property name="executeListenerProvider">
+                     <array>
+                            <bean class="org.jooq.impl.DefaultExecuteListenerProvider">
+                                   <constructor-arg index="0" ref="exceptionTranslator"/>
+                            </bean>
+                     </array>
+              </property>
+       </bean>
+
+       <bean id="modelMapper" class="org.modelmapper.ModelMapper"/>
+
+       <bean id="businessPartnerController" class="de.evas.sample.controller.BusinessPartnerController">
+              <constructor-arg index="0" ref="modelMapper"/>
+       </bean>
+</beans>
